@@ -35,7 +35,7 @@ jobs:
           git config user.name "${{ secrets.ACCESS_USER_NAME }}"
           git config user.email "${{ secrets.ACCESS_USER_EMAIL }}"
 
-          yq e '.spec.template.spec.containers[0].image = "$IMAGE_NAME:$GITHUB_REF_NAME-$GITHUB_SHA:${{ env.GITHUB_BRANCH }}"' -i deployment.apps/server.yaml
+          yq e '.spec.template.spec.containers[0].image = "$IMAGE_NAME:$GITHUB_REF_NAME-$GITHUB_SHA:${{ env.GITHUB_BRANCH }}"' -i deployment.apps/nodeserver.yaml
 
           git add .
           git commit -m "updating newer image"
