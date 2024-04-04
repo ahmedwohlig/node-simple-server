@@ -1,0 +1,42 @@
+name: main-deployment-action
+# we want to process this action when code is pushed into main branch
+on:
+  push:
+    branches:
+      - main
+# steps we want to process
+# 1. setup the required things i.e. github creds, docker hub creds, etc
+# 2. build the docker file
+# 3. add the latest image url to the deployment.apps files required to deploy
+jobs:
+  build-and-deploy:
+    name: Build And Deploy
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: ahmedsurya/nodeapplication
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build Docker image
+        run: docker build -t $IMAGE_NAME:$GITHUB_REF_NAME-$GITHUB_SHA .
+
+      - name: Docker Login
+        run: docker login -u ahmedsurya -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push And deploy
+        run: |-
+          docker push $IMAGE_NAME:$GITHUB_REF_NAME-$GITHUB_SHA
+          git clone https://${{ secrets.ACCESS_USER_NAME }}:${{ secrets.GH_PAT_TOKEN }}@github.com/ahmedwohlig/test-gitops
+
+          cd test-gitops
+          git checkout test
+
+          git config user.name "${{ secrets.ACCESS_USER_NAME }}"
+          git config user.email "${{ secrets.ACCESS_USER_EMAIL }}"
+
+          yq e '.spec.template.spec.containers[0].image = "$IMAGE_NAME:$GITHUB_REF_NAME-$GITHUB_SHA:${{ env.GITHUB_BRANCH }}"' -i deployment.apps/server.yaml
+
+          git add .
+          git commit -m "updating newer image"
+          git push --set-upstream origin test
